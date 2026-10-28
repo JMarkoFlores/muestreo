@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: antiphishing-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: antiphishing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d antiphishing"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    container_name: antiphishing-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/antiphishing
+      JWT_SECRET: ${JWT_SECRET:-local-dev-change-me}
+      ETL_API_KEY: ${ETL_API_KEY:-local-etl-key}
+      ALERT_API_KEY: ${ALERT_API_KEY:-local-alert-key}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  frontend:
+    build: ./frontend
+    container_name: antiphishing-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+  n8n:
+    build: ./n8n
+    image: sentinelbank-n8n:1.0
+    container_name: antiphishing-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: postgres
+      N8N_SECURE_COOKIE: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      ETL_API_KEY: ${ETL_API_KEY:-local-etl-key}
+      REPORTS_API_TOKEN: ${REPORTS_API_TOKEN:-}
+      REPORTS_USER: ${REPORTS_USER:-admin@sentinelbank.com}
+      REPORTS_PASSWORD: ${REPORTS_PASSWORD:-postgres}
+      ALERT_API_KEY: ${ALERT_API_KEY:-local-alert-key}
+    volumes:
+      - n8ndata:/home/node/.n8n
+      - ./n8n/workflows:/seed/workflows:ro
+    depends_on:
+      - backend
+volumes:
+  pgdata:
+  n8ndata:

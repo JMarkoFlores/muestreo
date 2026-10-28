@@ -1,0 +1,11 @@
+{
+  "name": "AntiPhishing - Alertas y escalamiento",
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "nodes": [
+    {"parameters": {"httpMethod": "POST", "path": "antiphishing-alert", "responseMode": "onReceived", "options": {}}, "id": "webhook", "name": "Alerta recibida", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 300]},
+    {"parameters": {"conditions": {"conditions": [{"leftValue": "={{ $json.body?.risk_score ?? $json.risk_score ?? 0 }}", "rightValue": 75, "operator": {"type": "number", "operation": "gte"}}]}}, "id": "if", "name": "¿Riesgo crítico?", "type": "n8n-nodes-base.if", "typeVersion": 2, "position": [480, 300]},
+    {"parameters": {"method": "POST", "url": "http://backend:8000/api/v1/alerts/webhook", "sendHeaders": true, "headerParameters": {"parameters": [{"name": "X-Alert-Key", "value": "={{ $env.ALERT_API_KEY }}"}]}, "sendBody": true, "specifyBody": "json", "jsonBody": "={{ JSON.stringify({title: 'Alerta antiphishing crítica', severity: 'critical', source: 'n8n', risk_score: ($json.body?.risk_score ?? $json.risk_score ?? 0), input_value: ($json.body?.input_value ?? $json.input_value ?? '')}) }}"}, "id": "create-incident", "name": "Crear incidente en SentinelBank", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [760, 220]}
+  ],
+  "connections": {"Alerta recibida": {"main": [[{"node": "¿Riesgo crítico?", "type": "main", "index": 0}]]}, "¿Riesgo crítico?": {"main": [[{"node": "Crear incidente en SentinelBank", "type": "main", "index": 0}], []]}}
+}

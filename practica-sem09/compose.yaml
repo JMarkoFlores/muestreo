@@ -1,0 +1,121 @@
+name: soc-lite
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-soc_lite}
+      POSTGRES_USER: ${POSTGRES_USER:-soc_lite}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soc_lite_local_only}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [soc_net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soc_lite} -d ${POSTGRES_DB:-soc_lite}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-soc_lite}:${POSTGRES_PASSWORD:-soc_lite_local_only}@postgres:5432/${POSTGRES_DB:-soc_lite}
+      JWT_SECRET: ${JWT_SECRET:-cambia-esta-clave-local}
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-soc-lite-service-local}
+      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-5173}
+      TRIAGE_URL: http://triage:8001
+      DEMO_MODE: ${DEMO_MODE:-true}
+    depends_on:
+      postgres: {condition: service_healthy}
+      triage: {condition: service_healthy}
+    ports: ["${BACKEND_PORT:-8000}:8000"]
+    networks: [soc_net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  triage:
+    build: ./triage
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      USE_OLLAMA: ${USE_OLLAMA:-false}
+      ENABLE_EXTERNAL_ENRICHMENT: ${ENABLE_EXTERNAL_ENRICHMENT:-false}
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY:-}
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY:-}
+      GEOIP_PROVIDER: ${GEOIP_PROVIDER:-simulado}
+    networks: [soc_net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  n8n:
+    image: n8nio/n8n:1.119.2
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: "false"
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-soc-lite-n8n-local}
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-soc_lite}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-soc_lite}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-soc_lite_local_only}
+      WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
+      SERVICE_API_KEY: ${SERVICE_API_KEY:-soc-lite-service-local}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/workflows:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+      backend: {condition: service_healthy}
+    ports: ["${N8N_PORT:-5678}:5678"]
+    networks: [soc_net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:${BACKEND_PORT:-8000}
+    depends_on:
+      backend: {condition: service_healthy}
+    ports: ["${FRONTEND_PORT:-5173}:80"]
+    networks: [soc_net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  ollama:
+    image: ollama/ollama:0.5.4
+    profiles: ["integrated"]
+    volumes:
+      - ollama_data:/root/.ollama
+    networks: [soc_net]
+    ports: ["${OLLAMA_PORT:-11434}:11434"]
+
+volumes:
+  postgres_data:
+    name: soc_lite_postgres_data
+  n8n_data:
+    name: soc_lite_n8n_data
+  ollama_data:
+    name: soc_lite_ollama_data
+
+networks:
+  soc_net:
+    name: soc_lite_net
+    driver: bridge

@@ -1,0 +1,12 @@
+{
+  "name": "AntiPhishing - Reporte ejecutivo programado",
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "nodes": [
+    {"parameters": {"rule": {"interval": [{"field": "weeks", "triggerAtDay": [1], "triggerAtHour": 8}]}}, "id": "schedule", "name": "Cada lunes 08:00", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [180, 300]},
+    {"parameters": {"method": "POST", "url": "http://backend:8000/api/v1/auth/login", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ JSON.stringify({email: $env.REPORTS_USER, password: $env.REPORTS_PASSWORD}) }}"}, "id": "login", "name": "Autenticar API", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [420, 300]},
+    {"parameters": {"method": "GET", "url": "http://backend:8000/api/v1/reports/export?format=pdf", "sendHeaders": true, "headerParameters": {"parameters": [{"name": "Authorization", "value": "=Bearer {{$json.access_token}}"}]}, "options": {"response": {"response": {"responseFormat": "file"}}}}, "id": "report", "name": "Generar reporte PDF", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [680, 300]},
+    {"parameters": {"fromEmail": "soc@sentinelbank.local", "toEmail": "stakeholders@sentinelbank.local", "subject": "Reporte semanal antiphishing", "text": "Reporte generado automáticamente por SentinelBank", "attachments": "data"}, "id": "email", "name": "Enviar a stakeholders", "type": "n8n-nodes-base.emailSend", "typeVersion": 2.1, "position": [920, 300]}
+  ],
+  "connections": {"Cada lunes 08:00": {"main": [[{"node": "Autenticar API", "type": "main", "index": 0}]]}, "Autenticar API": {"main": [[{"node": "Generar reporte PDF", "type": "main", "index": 0}]]}, "Generar reporte PDF": {"main": [[{"node": "Enviar a stakeholders", "type": "main", "index": 0}]]}}
+}

@@ -1,0 +1,11 @@
+{
+  "name": "AntiPhishing - Ingesta programada",
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "nodes": [
+    {"parameters": {"rule": {"interval": [{"field": "hours", "hoursInterval": 24}]}}, "id": "schedule", "name": "Cada 24 horas", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [260, 300]},
+    {"parameters": {"url": "https://data.phishtank.com/data/online-valid.json", "options": {"response": {"response": {"responseFormat": "json"}}}}, "id": "download", "name": "Descargar fuente pública", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [500, 300]},
+    {"parameters": {"method": "POST", "url": "http://backend:8000/api/v1/etl/import", "sendHeaders": true, "headerParameters": {"parameters": [{"name": "X-ETL-Key", "value": "={{ $env.ETL_API_KEY }}"}]}, "sendBody": true, "specifyBody": "json", "jsonBody": "={{ JSON.stringify({source: 'PhishTank', records: $json}) }}"}, "id": "import", "name": "Importar con trazabilidad", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [760, 300]}
+  ],
+  "connections": {"Cada 24 horas": {"main": [[{"node": "Descargar fuente pública", "type": "main", "index": 0}]]}, "Descargar fuente pública": {"main": [[{"node": "Importar con trazabilidad", "type": "main", "index": 0}]]}}
+}

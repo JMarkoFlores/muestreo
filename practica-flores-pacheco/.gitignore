@@ -1,0 +1,133 @@
+# ==============================================================================
+# Git Ignore - SentinelBank Antiphishing SOC (Fullstack Python / React / Docker)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Dependencias y gestores de paquetes (Node / PNPM / NPM / Yarn)
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm-store/
+.pnp/
+.pnp.js
+
+# ------------------------------------------------------------------------------
+# Compilación y builds (Frontend Vite / TypeScript)
+# ------------------------------------------------------------------------------
+dist/
+**/dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# ------------------------------------------------------------------------------
+# Python y cachés
+# ------------------------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+build/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.manifest
+*.spec
+
+# ------------------------------------------------------------------------------
+# Entornos virtuales Python
+# ------------------------------------------------------------------------------
+.venv/
+**/.venv/
+venv/
+**/venv/
+env/
+**/env/
+ENV/
+env.bak/
+venv.bak/
+
+# ------------------------------------------------------------------------------
+# Pruebas y Cobertura (Pytest / Jest / Coverage)
+# ------------------------------------------------------------------------------
+.pytest_cache/
+**/.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+coverage/
+
+# ------------------------------------------------------------------------------
+# Variables de entorno y secretos
+# ------------------------------------------------------------------------------
+.env
+.env.*
+*.env
+# Asegurar que la plantilla de ejemplo NO sea ignorada
+!.env.example
+*.pem
+*.key
+*.cert
+
+# ------------------------------------------------------------------------------
+# Datos locales, bases de datos y volúmenes Docker
+# ------------------------------------------------------------------------------
+*.sqlite3
+*.sqlite
+*.db
+pgdata/
+n8ndata/
+.n8n/
+
+# ------------------------------------------------------------------------------
+# Registros y logs
+# ------------------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# Editores e IDEs (VS Code, JetBrains, Sublime)
+# ------------------------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ------------------------------------------------------------------------------
+# Archivos del sistema operativo (Windows / macOS / Linux)
+# ------------------------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
