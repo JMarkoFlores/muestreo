@@ -14,7 +14,7 @@ router=APIRouter(prefix='/api/alerts',tags=['alerts'])
 
 def dedup_key(data:AlertIn): return sha256(f'{data.source}|{data.external_id or ""}|{data.title}|{data.source_ip or ""}|{data.destination_ip or ""}'.encode()).hexdigest()
 @router.get('')
-def list_alerts(page:int=Query(1,ge=1),page_size:int=Query(20,ge=1,le=100),severity:str|None=None,status:str|None=None,search:str|None=None,db:Session=Depends(get_db),user=Depends(require_roles('administrador','analista','lector'))):
+def list_alerts(page:int=Query(1,ge=1),page_size:int=Query(50,ge=1,le=500),severity:str|None=None,status:str|None=None,search:str|None=None,db:Session=Depends(get_db),user=Depends(require_roles('administrador','analista','lector'))):
     q=db.query(Alert).options(joinedload(Alert.triage),joinedload(Alert.enrichment))
     if severity: q=q.filter(Alert.severity==severity)
     if status: q=q.filter(Alert.status==status)

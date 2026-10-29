@@ -215,10 +215,16 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   });
   const [sum, setSum] = useState<any>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alertsTotal, setAlertsTotal] = useState<number>(0);
   const [inc, setInc] = useState<Incident[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+
+  const handleSelectAlert = (a: Alert) => {
+    setSelectedAlert(a);
+    api(`/api/alerts/${a.id}`).then(fresh => setSelectedAlert(fresh)).catch(() => {});
+  };
 
   // Filtros en pestaña de alertas
   const [searchQuery, setSearchQuery] = useState('');
@@ -234,27 +240,32 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const [sumData, alertsData, incidentsData] = await Promise.all([
         api('/api/dashboard/summary'),
-        api('/api/alerts?page_size=50'),
+        api('/api/alerts?page_size=200'),
         api('/api/incidents')
       ]);
       setSum(sumData);
       setAlerts(alertsData.items || []);
+      setAlertsTotal(alertsData.total ?? sumData.total ?? alertsData.items?.length ?? 0);
       setInc(incidentsData || []);
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -312,14 +323,14 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
             onClick={() => setTab('alerts')}
           >
             <ShieldAlert size={18} />
-            <span>Alertas ({alerts.length})</span>
+            <span>Alertas ({sum?.total ?? alertsTotal})</span>
           </button>
           <button
             className={`nav-item ${tab === 'incidents' ? 'active' : ''}`}
             onClick={() => setTab('incidents')}
           >
             <Flame size={18} />
-            <span>Incidentes ({inc.length})</span>
+            <span>Incidentes ({sum?.open_incidents ?? inc.length})</span>
           </button>
           <button
             className={`nav-item ${tab === 'reports' ? 'active' : ''}`}
@@ -372,7 +383,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
           <div className="header-actions">
             <button
               className={`btn-refresh ${loading ? 'loading' : ''}`}
-              onClick={loadData}
+              onClick={() => loadData(false)}
               disabled={loading}
             >
               <RefreshCw size={15} />
@@ -567,7 +578,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                   Ver todas las alertas <ChevronRight size={14} />
                 </button>
               </div>
-              <AlertsTable alerts={alerts.slice(0, 6)} onSelect={setSelectedAlert} />
+              <AlertsTable alerts={alerts.slice(0, 6)} onSelect={handleSelectAlert} />
             </div>
           </>
         )}
@@ -578,7 +589,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
             <div className="panel-header">
               <h2>
                 <ShieldAlert size={18} color="#06b6d4" />
-                Listado Maestro de Alertas ({filteredAlerts.length})
+                Listado Maestro de Alertas ({filteredAlerts.length !== (sum?.total ?? alertsTotal) ? `${filteredAlerts.length} de ${sum?.total ?? alertsTotal}` : (sum?.total ?? alertsTotal)})
               </h2>
             </div>
 
@@ -608,7 +619,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
               </select>
             </div>
 
-            <AlertsTable alerts={filteredAlerts} onSelect={setSelectedAlert} />
+            <AlertsTable alerts={filteredAlerts} onSelect={handleSelectAlert} />
           </div>
         )}
 
@@ -724,7 +735,11 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
               <Clock size={14} color="#06b6d4" />
               <span>Tiempo Medio de Triaje (MTTT):</span>
               <strong>
-                {sum?.mttt_seconds == null ? 'sin datos' : `${Math.round(sum.mttt_seconds)} s`}
+                {sum?.mttt_seconds == null
+                  ? 'sin datos'
+                  : sum.mttt_seconds < 1
+                  ? `${sum.mttt_seconds.toFixed(2)} s`
+                  : `${sum.mttt_seconds.toFixed(1)} s`}
               </strong>
             </div>
             <div className="footer-metric-item">
@@ -902,16 +917,26 @@ function AuditView() {
   const [data, setData] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchAudit = (silent = false) => {
+    if (!silent) setLoading(true);
     api('/api/audit')
       .then(res => {
         setData(res || []);
-        setLoading(false);
       })
       .catch(() => {
         setData([]);
-        setLoading(false);
+      })
+      .finally(() => {
+        if (!silent) setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchAudit();
+    const interval = setInterval(() => {
+      fetchAudit(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

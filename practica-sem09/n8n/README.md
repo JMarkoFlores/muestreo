@@ -21,3 +21,15 @@ Archivo importable: `soc-lite-demo.json`. Compatible con n8n `1.119.2`.
 5. Guardar y activar. Probar con `python simulator/send_alert.py`.
 
 La persistencia de negocio se realiza mediante el endpoint backend para asegurar validación, idempotencia y auditoría; PostgreSQL es la base real detrás del endpoint. El nodo nativo posterior confirma el estado cuando se configura la credencial interna. El nodo `Evitar triaje duplicado` evita llamar al microservicio cuando el backend responde `status=duplicate`. Las salidas HTTP tienen timeouts y modo tolerante para que la alerta permanezca persistida. El workflow es operativo en demo sin credenciales externas; la credencial DB interna mejora la comprobación nativa.
+
+
+## Simulador Automático Cada 1 Minuto
+
+Archivo importable: `soc-lite-simulator-cron.json`.
+
+Este workflow automatiza la ejecución periódica equivalente a `simulator/send_alert.py`:
+1. **Schedule Trigger (`Cada 1 minuto`)**: Dispara el workflow automáticamente cada 60 segundos.
+2. **Code Node (`Generar Alertas`)**: Genera el mismo set de 3 alertas simuladas (alta, media y baja) con sufijo temporal dinámico único por minuto para evitar falsos duplicados.
+3. **HTTP Request (`Enviar al Webhook de n8n`)**: Realiza `POST` a `http://localhost:5678/webhook/soc-lite-alert`, activando el flujo principal de ingesta, triaje y persistencia para que el dashboard reciba datos en tiempo real.
+
+Se encuentra activo en n8n y puede pausarse o reactivarse en cualquier momento desde la interfaz web (`http://localhost:5678`).

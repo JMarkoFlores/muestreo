@@ -27,3 +27,12 @@ Fecha de inicio: 2026-10-19 (America/Lima)
 docker version
 docker compose --env-file .env up --build -d
 ```
+- [x] Creado e importado workflow programado cada 1 minuto (`n8n/soc-lite-simulator-cron.json`) que replica `simulator/send_alert.py` hacia el webhook, activado y verificado en vivo.
+- [x] Corregido módulo de Bitácora de Auditoría: se habilitó permiso para el rol `analista` en `/api/audit` (antes bloqueado por 403 Forbidden).
+- [x] Agregado refresco automático en tiempo real (cada 4 segundos) para el Panel General y la Bitácora de Auditoría, actualizando KPIs, alertas y eventos forenses sin recargar la página.
+- [x] Corregida coherencia numérica en toda la plataforma:
+  - El badge lateral de Alertas ahora muestra el total real del sistema (`sum.total`) en lugar de estar truncado por el tamaño de página (`alerts.length = 50`).
+  - La API de alertas ahora admite `page_size` de hasta 500 registros, sincronizando la tabla maestra con el conteo general.
+  - El título de Listado Maestro ahora indica claramente los filtros activos (ej. `X de Y`).
+  - Se ajustó el MTTT para mostrar decimales en triajes automatizados subsegundo en lugar de redondear a `0 s`.
+  - Validación cruzada ejecutada: Alertas Totales = Severidades = Orígenes = Paginación = 100% coherente.

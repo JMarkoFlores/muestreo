@@ -8,12 +8,12 @@
 - `GET /api/dashboard/summary`: severidades, pendientes/procesadas, timeline, orígenes, MTTT, falsos positivos e incidentes abiertos.
 - `GET/POST/PATCH /api/incidents`.
 - `GET /api/reports/export/{pdf|docx|xlsx}`; filtra `severity` y audita la exportación.
-- `GET /api/audit` solo administrador.
+- `GET /api/audit`: consulta de auditoría inmutable para administradores, analistas y lectores.
 - `GET/POST/PATCH /api/users` solo administrador para gestión de perfiles y roles.
 
 ## Auth/RBAC
 
-JWT Bearer. Roles: `administrador`, `analista`, `lector`. El backend aplica permisos, no solo la UI: lector consulta; analista modifica incidentes y exporta; administrador además gestiona/consulta auditoría. Contraseñas nunca se registran.
+JWT Bearer. Roles: `administrador`, `analista`, `lector`. El backend aplica permisos, no solo la UI: lector consulta; analista modifica incidentes, exporta y consulta auditoría; administrador además gestiona usuarios. Contraseñas nunca se registran.
 
 ## Métricas
 

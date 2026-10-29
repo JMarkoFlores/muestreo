@@ -1,0 +1,96 @@
+{
+  "name": "SOC-Lite · Simulador Automático de Alertas (Cada 1 Minuto)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Cada 1 minuto",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-200, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const suffix = Math.floor(Date.now() / 1000).toString();\n\nconst samples = [\n  {\n    external_id: `SIM-HIGH-${suffix}`,\n    source: 'wazuh',\n    title: `Brute force SSH detectado (${suffix})`,\n    description: '12 fallos de autenticacion en 60 segundos detectados por Wazuh',\n    source_ip: '8.8.8.8',\n    destination_ip: '10.0.0.10',\n    severity: 'high'\n  },\n  {\n    external_id: `SIM-MED-${suffix}`,\n    source: 'opnsense',\n    title: `Escaneo de puertos TCP (${suffix})`,\n    description: 'Conexiones anomalas a multiples puertos detectadas por OPNsense',\n    source_ip: '1.1.1.1',\n    destination_ip: '192.168.1.20',\n    severity: 'medium'\n  },\n  {\n    external_id: `SIM-LOW-${suffix}`,\n    source: 'wazuh',\n    title: `Evento informativo (${suffix})`,\n    description: 'Cambio rutinario en reglas locales',\n    source_ip: '10.0.0.2',\n    destination_ip: '10.0.0.1',\n    severity: 'low'\n  }\n];\n\nreturn samples.map(item => ({ json: item }));"
+      },
+      "id": "generate-alerts",
+      "name": "Generar Alertas (send_alert.py)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [40, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/soc-lite-alert",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "send-alert-http",
+      "name": "Enviar al Webhook de n8n",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Cada 1 minuto": {
+      "main": [
+        [
+          {
+            "node": "Generar Alertas (send_alert.py)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Alertas (send_alert.py)": {
+      "main": [
+        [
+          {
+            "node": "Enviar al Webhook de n8n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "soc-lite-sim-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
